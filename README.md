@@ -9,3 +9,7 @@ Other Matlab projects I created are using this framework.
 
 ## Installation
 Download files and folders, and put them in a folder with suitable name. Go to Matlab command line, enter "addpath" + full paths of the folder and subfolders, and enter "savepath".
+
+## Requirement
+This framework was developed in Matlab_R2018a.
+This framework requires no Matlab toolbox nor other custom frameworks.
