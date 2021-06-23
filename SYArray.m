@@ -157,6 +157,19 @@ function result = objectAtIndex(obj,index)
 % result = objectAtIndex(obj,index)
     result = obj.elements{index};
 end
+function result = objectsAtIndexes(obj,indices)
+% Method returning a sub-array containing objects at indices.
+% result = objectsAtIndexes(obj,indices)
+    if islogical(indices) && length(indices) ~= obj.count
+        indices = find(indices);
+    end
+    if isnumeric(indices)
+        jndices = indices < 1 | indices > obj.count;
+        indices(jndices) = [];
+    end
+    
+    result = SYArray(obj.elements{indices});
+end
 function result = indexOfObject(obj,object)
 % Method returning indices of object in the array.
 % result = indexOfObject(obj,object)
