@@ -41,7 +41,6 @@ function obj = init(obj)
     init@SYObject(obj);
     
     obj.representations = SYArray;
-%     obj.graphicsContext = SYGraphicsContext;
 end
 function obj = initWithData(obj,data)
 % Initialization method with SYData instance.
@@ -114,9 +113,16 @@ function prepareGraphicsContext(obj)
     end
     bitsPerComponenet = bitmapRep.bitsPerComponent;
     compositeMode = SYGraphicsContext.CompositeModeOver;
+    lut = nan;
     switch bitmapRep.componentsPerPixel
         case 1
-            colorSpace = SYGraphicsContext.ColorSpaceGrayscale;
+            if isnumeric(bitmapRep.bitmap.var)
+                colorSpace = SYGraphicsContext.ColorSpaceGrayscale;
+            elseif islogical(bitmapRep.bitmap.var)
+                colorSpace = SYGraphicsContext.ColorSpaceIndexed;
+                lut = uint8([0,0,0; 255,255,255]);
+                obj.range = [0,1];
+            end
         case 3
             colorSpace = SYGraphicsContext.ColorSpaceRGB;
         case 4
@@ -145,7 +151,7 @@ function prepareGraphicsContext(obj)
     
     context = SYGraphicsContext;
     context.initWithContext(obj.data,width,height,bitsPerComponenet, ...
-        compositeMode,colorSpace,nan,obj.range);
+        compositeMode,colorSpace,lut,obj.range);
     obj.graphicsContext = context;
     
     obj.frameSize = [height,width];
@@ -180,7 +186,9 @@ end
 function setRange(obj,newRange)
 % Bypass method from set.range.
 % Do not call directly.
-    obj.graphicsContext.range = newRange;
+    if ~isnan(obj.graphicsContext)
+        obj.graphicsContext.range = newRange;
+    end
     
 %     obj.data.var = obj.drawBitmapRep(nan);
 end
@@ -307,11 +315,14 @@ function result = tagForTiff(obj,scaled)
         if obj.graphicsContext.colorSpace == ...
                 SYGraphicsContext.ColorSpaceGrayscale
             tag.SamplesPerPixel = 1;
+            tag.Photometric = Tiff.Photometric.MinIsBlack;
         elseif obj.isTransparent
             tag.SamplesPerPixel = 4;
             tag.ExtraSamples = Tiff.ExtraSamples.AssociatedAlpha;
+            tag.Photometric = Tiff.Photometric.RGB;
         else
             tag.SamplesPerPixel = 3;
+            tag.Photometric = Tiff.Photometric.RGB;
         end
     else
         bitmapRep = obj.representations.objectAtIndex(1);
@@ -333,17 +344,20 @@ function result = tagForTiff(obj,scaled)
         if obj.graphicsContext.colorSpace == ...
                 SYGraphicsContext.ColorSpaceComposite
             tag.SamplesPerPixel = 1;
+            tag.Photometric = Tiff.Photometric.MinIsBlack;
         elseif bitmapRep.componentsPerPixel == 4
             tag.SamplesPerPixel = 4;
             tag.ExtraSamples = Tiff.ExtraSamples.AssociatedAlpha;
+            tag.Photometric = Tiff.Photometric.RGB;
         elseif bitmapRep.componentsPerPixel == 3
             tag.SamplesPerPixel = 3;
+            tag.Photometric = Tiff.Photometric.RGB;
         else
             tag.SamplesPerPixel = 1;
+            tag.Photometric = Tiff.Photometric.MinIsBlack;
         end
     end
     tag.Compression = Tiff.Compression.None;
-    tag.Photometric = Tiff.Photometric.MinIsBlack;
     tag.PlanarConfiguration = Tiff.PlanarConfiguration.Chunky;
     
     result = tag;
@@ -480,7 +494,7 @@ function result = drawBitmapRep(obj,bitmapRep)
 % Argument (SYBitmapImageRep) bitmapRep is the image to be drawn. It can be
 % nan, and if so, this method draw obj first image rep.
 % Return value is a bitmap raw data.
-    if nargin < 1 || isnan(bitmapRep)
+    if nargin < 2 || isnan(bitmapRep)
         bitmapRep = obj.representations.objectAtIndex(1);
     end
     
