@@ -128,13 +128,10 @@ function result = description(obj)
     while ~enumerator.isNextObjectNan
         key = enumerator.nextObject;
         if ischar(key)
-%             str = [str,'\nKey :',key,' {'];
             str = cat(2,str,'\nKey :',key,' {');
         elseif isa(key,'SYObject')
-%             str = [str,'\nKey :',key.description,' {'];
             str = cat(2,str,'\nKey :',key.description,' {');
         else
-%             str = [str,'\nKey :',ss_describe_variable(key),' {'];
             str = cat(2,str,'\nKey :',ss_describe_variable(key),' {');
         end
         
@@ -145,7 +142,6 @@ function result = description(obj)
             ttr = ss_describe_variable(pbj);
         end
         ttr = ss_indent_text(ttr);
-%         str = [str,'\n',ttr,'\n}'];
         str = cat(2,str,'\n',ttr,'\n}');
     end
     str = [str,'\n}'];
@@ -239,6 +235,11 @@ function result = isNanForKey(obj,key)
 % result = isNanForKey(obj,key)
     result = true;
     if nargin < 1 || obj.count < 1
+        return;
+    end
+    
+    index = obj.keyArray.indexOfObject(key);
+    if isempty(index)
         return;
     end
     
