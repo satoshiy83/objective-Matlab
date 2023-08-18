@@ -14,8 +14,10 @@ function result = writeToFile(filename,varargin)
 % Return value is a boolean indicating whether the variables were written
 % successfully.
 result = false;
-if nargin < 1 || ~ischar(filename)
-    return;
+if nargin < 1 || ~(ischar(filename) || isstring(filename))
+    return
+elseif isstring(filename)
+    filename = convertStringsToChars(filename);
 end
 
 array = strsplit(filename,'.');

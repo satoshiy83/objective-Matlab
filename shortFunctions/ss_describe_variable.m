@@ -9,6 +9,8 @@ function result = ss_describe_variable(variable)
         result = lf_describe_numeric(variable);
     elseif ischar(variable)
         result = lf_describe_char(variable);
+    elseif isstring(variable)
+        result = lf_describe_string(variable);
     elseif iscell(variable)
         result = lf_describe_cell(variable);
     elseif isstruct(variable)
@@ -108,6 +110,12 @@ end
 function result = lf_describe_char(variable)
     result = ['char with length: ',num2str(length(variable)),'\n' ...
         ,variable];
+end
+
+%% describe string.
+function result = lf_describe_string(variable)
+    result = ['string with length: ',num2str(strlength(variable)),'\n' ...
+        ,convertStringsToChars(variable)];
 end
 
 %% describe cell array.
