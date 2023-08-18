@@ -28,9 +28,11 @@ function obj = SYImage(input)
         obj.initWithData(input);
     elseif isa(input,'SYGraphicsContext')
         obj.initWithGraphicsContext(input);
+    elseif isa(input,'SYBitmapImageRep')
+        obj.initWithBitmapRep(input);
     elseif isnumeric(input)
         obj.initWithData(SYData(input));
-    elseif ischar(input)
+    elseif ischar(input) || isstring(input)
         obj.initWithContentsOfFile(input);
     end
 end
@@ -54,11 +56,24 @@ function obj = initWithData(obj,data)
     
     obj.prepareGraphicsContext;
 end
+function obj = initWithBitmapRep(obj,bitmapRep)
+% Initialization method with SYBitmapImageRep instance.
+% obj = initWithBitmapRep(obj,rep)
+    obj.init;
+
+    obj.addRepresentation(bitmapRep);
+
+    obj.prepareGraphicsContext;
+end
 function obj = initWithContentsOfFile(obj,path)
 % Initialization method with file path.
 % obj = initWithContentsOfFile(obj,path)
     obj.init;
     
+    if isstring(path)
+        path = convertStringsToChars(path);
+    end
+
     array = strsplit(path,'.');
     ext = array{end};
     if isequal(ext,'tif') || isequal(ext,'tiff') || isequal(ext,'TIF')
@@ -118,6 +133,8 @@ function prepareGraphicsContext(obj)
         case 1
             if isnumeric(bitmapRep.bitmap.var)
                 colorSpace = SYGraphicsContext.ColorSpaceGrayscale;
+                obj.range = [min(bitmapRep.bitmap.var(:)), ...
+                    max(bitmapRep.bitmap.var(:))];
             elseif islogical(bitmapRep.bitmap.var)
                 colorSpace = SYGraphicsContext.ColorSpaceIndexed;
                 lut = uint8([0,0,0; 255,255,255]);
@@ -148,6 +165,7 @@ function prepareGraphicsContext(obj)
         c = 3;
     end
     obj.data = SYData(zeros(height,width,c,d));
+%     obj.data.var = obj.drawBitmapRep();
     
     context = SYGraphicsContext;
     context.initWithContext(obj.data,width,height,bitsPerComponenet, ...
@@ -155,6 +173,8 @@ function prepareGraphicsContext(obj)
     obj.graphicsContext = context;
     
     obj.frameSize = [height,width];
+
+    obj.data.var = obj.drawBitmapRep();
 end
 function set.graphicsContext(obj,context)
     obj.graphicsContext = context;
@@ -241,6 +261,10 @@ function result = writeToFile(obj,path_,scaled)
     if obj.countStack < 1
         result = false;
         return;
+    end
+
+    if isstring(path_)
+        path_ = convertStringsToChars(path_);
     end
     
     stack = obj.bitmapImageArray(scaled);
@@ -575,30 +599,33 @@ function result = isTransparent(obj)
 % Method indicating if obj has an alpha channel.
 % result = isTransparent(obj)
 % Return value is a boolean.
-    if obj.graphicsContext.colorSpace == ...
-            SYGraphicsContext.ColorSpaceRGBA || ...
-            obj.graphicsContext.colorSpace == ...
-            SYGraphicsContext.ColorSpaceHSBA
-        result = true;
-    elseif obj.graphicsContext.colorSpace == ...
-            SYGraphicsContext.ColorSpaceIndexed || ...
-            obj.graphicsContext.colorSpace == ...
-            SYGraphicsContext.ColorSpaceComposite
-        lut = obj.graphicsContext.lut;
-        if size(lut,2) > 3
-            result = true;
-        else
-            result = false;
-        end
-    else
-        result = false;
-    end
+    result = obj.graphicsContext.isTransparent;
+
+%     if obj.graphicsContext.colorSpace == ...
+%             SYGraphicsContext.ColorSpaceRGBA || ...
+%             obj.graphicsContext.colorSpace == ...
+%             SYGraphicsContext.ColorSpaceHSBA
+%         result = true;
+%     elseif obj.graphicsContext.colorSpace == ...
+%             SYGraphicsContext.ColorSpaceIndexed || ...
+%             obj.graphicsContext.colorSpace == ...
+%             SYGraphicsContext.ColorSpaceComposite
+%         lut = obj.graphicsContext.lut;
+%         if size(lut,2) > 3
+%             result = true;
+%         else
+%             result = false;
+%         end
+%     else
+%         result = false;
+%     end
 end
 
 function showImage(obj)
 % Method to display obj first image rep in a window.
 % showImage(obj)
-    bitmap = obj.drawBitmapRep(nan);
+%     bitmap = obj.drawBitmapRep(nan);
+    bitmap = obj.data.var;
     if obj.isTransparent
         bitmap(:,:,4) = [];
     end

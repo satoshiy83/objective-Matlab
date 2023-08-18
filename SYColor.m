@@ -58,6 +58,18 @@ function dest = copy(obj,dest)
 end
 
 function set.lut(obj,lut)
+    if ischar(lut)
+        s = load([lut,'.lut.mat'],'lut');
+        lut = s.lut;
+    elseif isstring(lut)
+        lut = convertStringsToChars(lut);
+        s = load([lut,'.lut.mat'],'lut');
+        lut = s.lut;
+    end
+    if ~isnumeric(lut) || isempty(lut)
+        return
+    end
+
     obj.lut = obj.normalizeLut(lut);
     obj.setLut(lut);
 end
@@ -404,6 +416,29 @@ function result = normalizeLut(~,lut)
         lut(lut > 1) = 1;
     end
     result = lut;
+end
+
+function result = showLUT(obj)
+% Method to show look up table.
+% result = showLUT(obj)
+% Return value is an SYImage instance.
+    if length(obj.lut) < 2
+        return
+    end
+
+    bar = permute(obj.lut,[3,1,2]);
+    image = SYImage(SYData(bar));
+    image.frameSize = [18,398];
+    image.graphicsContext.bitsPerComponent = 8;
+
+    bitmap = image.drawBitmapRep();
+    citmap = zeros(20,400,3,'uint8');
+    citmap(2:19,2:399,1:3) = bitmap(:,:,1:3);
+    jmage = SYImage(SYData(citmap));
+
+    jmage.showImage;
+
+    result = jmage;
 end
 
 end

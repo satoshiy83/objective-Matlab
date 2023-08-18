@@ -37,6 +37,10 @@ end
 function obj = initWithContentsOfFile(obj,name)
 % Initializing method with a file path.
 % obj = initWithContentsOfFile(obj,name)
+    if isstring(name)
+        name = convertStringsToChars(name);
+    end
+
     if exist(name,'file') == 2
         fileInfo = who('-file',name);
         if length(fileInfo) == 1 && ismember('bytes',fileInfo)
@@ -133,6 +137,10 @@ function result = writeToFile(obj,name)
 % Method to export a content of the instance.
 % result = writeToFile(obj,name)
 % The argument name is string of file path.
+    if isstring(name)
+        name = convertStringsToChars(name);
+    end
+
     bytes = obj.var;
     result = writeToFile(name,'bytes');
 end

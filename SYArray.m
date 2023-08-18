@@ -145,7 +145,11 @@ function result = description(obj)
     result = str;
 end
 
-
+function result = containsObject(obj,item)
+% Method returning a boolean whether the array contains an item.
+% result = containsObject(obj,item)
+    result = any(cellfun(@(x) isEqual(x,item),obj.elements));
+end
 function result = count(obj)
 % Method returning number of itmes in the array.
 % result = count(obj)
@@ -187,7 +191,9 @@ function result = indexOfObject(obj,object)
             b = SYArray(object{:});
             array(i) = a.isEqual(b);
         elseif ~iscell(obj.objectAtIndex(i)) && ~iscell(object) && ...
-                length(obj.objectAtIndex(i)) == length(object)
+                length(size(obj.objectAtIndex(i))) == ...
+                length(size(object)) && ...
+                all(size(obj.objectAtIndex(i)) == size(object))
             a = obj.objectAtIndex(i) == object;
             array(i) = all(a(:));
         end
@@ -277,6 +283,19 @@ function removeObject(obj,object)
     indices = obj.indexOfObject(object);
     if ~isempty(indices)
         obj.elements(indices) = [];
+    end
+end
+function removeObjectsInArray(obj,array)
+% Method to remove items in an array.
+% removeObjectsInArray(obj,array)
+% Argument array is an SYArray instance.
+    if array.count < 1
+        return
+    end
+
+    for i = 1:array.count
+        item = array.objectAtIndex(i);
+        obj.removeObject(item);
     end
 end
 function removeObjectAtIndex(obj,index)

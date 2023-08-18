@@ -33,6 +33,52 @@ properties
     range = nan; % double[n,2];
 end
 
+methods (Static)
+function drawInto(context,frame,source,mask)
+    if context.bitsPerComponent == 8
+        d = 255;
+        t = 'uint8';
+    elseif context.bitsPerComponent == 16
+        d = 65535;
+        t = 'uint16';
+    elseif context.bitsPerComponent == 32
+        d = 1;
+        t = 'single';
+    else
+        d = 1;
+        t = 'double';
+    end
+    
+    % indices describes an area in the context.
+    c_x_l = max([1,frame(1)]);
+    c_x_r = min([context.width,frame(1) + frame(3) - 1]);
+    c_y_b = max([1,frame(2)]);
+    c_y_t = min([context.height,frame(2) + frame(4) - 1]);
+    citmap = context.data.var(c_y_b:c_y_t,c_x_l:c_x_r,:);
+
+    % jndices describes an area in the source.
+    s_x_l = max([1,2 - frame(1)]);
+    s_x_r = min([frame(3),context.width - frame(1) + 1]);
+    s_y_b = max([1,2 - frame(2)]);
+    s_y_t = min([frame(4),context.height - frame(2) + 1]);
+    sitmap = source(s_y_b:s_y_t,s_x_l:s_x_r,:);
+    nask = mask(s_y_b:s_y_t,s_x_l:s_x_r);
+
+    if context.compositeMode == SYGraphicsContext.CompositeModeOver
+        bitmap = double(sitmap) .* nask;
+    elseif context.compositeMode == SYGraphicsContext.CompositeModeLighten
+        bitmap = cat(4,citmap,sitmap);
+        bitmap = double(max(bitmap,[],4)) .* nask;
+    elseif context.compositeMode == SYGraphicsContext.CompositeModeDarken
+        bitmap = cat(4,citmap,sitmap);
+        bitmap = double(min(bitmap,[],4)) .* nask;
+    elseif context.compositeMode == SYGraphicsContext.CompositeModeMultiply
+        bitmap = double(citmap) ./ d .* double(citmap) .* nask;
+    end
+    citmap = double(citmap) .* (1 - nask);
+    context.data.var(c_y_b:c_y_t,c_x_l:c_x_r,:) = cast(bitmap + citmap,t);
+end
+end
 methods
 function obj = SYGraphicsContext(data_,width_,height_, ...
         bitsPerComponent_,compositeMode_,colorSpace_,lut_,range_)
@@ -96,5 +142,20 @@ function dest = copy(obj,dest)
     dest.range = obj.range;
 end
 
+function result = isTransparent(obj)
+    if obj.colorSpace == SYGraphicsContext.ColorSpaceRGBA || ...
+            obj.colorSpace == SYGraphicsContext.ColorSpaceHSBA
+        result = true;
+    elseif obj.colorSpace == SYGraphicsContext.ColorSpaceIndexed || ...
+            obj.colorSpace == SYGraphicsContext.ColorSpaceComposite
+        if size(obj.lut,2) > 3
+            result = true;
+        else
+            result = false;
+        end
+    else
+        result = false;
+    end
+end
 end
 end

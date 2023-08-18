@@ -41,7 +41,7 @@ function obj = initWithData(obj,data)
     if ~isa(data,'SYData')
         data = SYData(data);
     end
-    if ~isnumeric(data.var)
+    if ~isnumeric(data.var) && ~islogical(data.var)
         return;
     end
     
@@ -57,6 +57,8 @@ function obj = initWithData(obj,data)
         obj.bitsPerComponent = uint32(32);
     elseif isa(data.var,'double')
         obj.bitsPerComponent = uint32(64);
+    elseif isa(data.var,'logical')
+        obj.bitsPerComponent = uint32(8);
     end
     obj.componentsPerPixel = size(data.var,3);
 end

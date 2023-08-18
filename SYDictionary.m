@@ -2,6 +2,7 @@
 % Written by Satoshi Yamashita.
 % Fundamental superclass of dictinary that contains cell array and returns
 % object for given key.
+% For the key, char array and string are not distinguished.
 
 classdef SYDictionary < SYObject
 properties
@@ -129,6 +130,8 @@ function result = description(obj)
         key = enumerator.nextObject;
         if ischar(key)
             str = cat(2,str,'\nKey :',key,' {');
+        elseif isstring(key)
+            str = cat(2,str,'\nKey :',convertStringsToChars(key),' {');
         elseif isa(key,'SYObject')
             str = cat(2,str,'\nKey :',key.description,' {');
         else
@@ -172,6 +175,18 @@ function result = objectForKey(obj,key)
     if ~isempty(index)
         result = obj.contentArray.objectAtIndex(index(1));
         return;
+    elseif ischar(key)
+        index = obj.keyArray.indexOfObject(convertCharsToStrings(key));
+        if ~isempty(index)
+            result = obj.contentArray.objectAtIndex(index(1));
+            return
+        end
+    elseif isstring(key)
+        index = obj.keyArray.indexOfObject(convertStringsToChars(key));
+        if ~isempty(index)
+            result = obj.contentArray.objectAtIndex(index(1));
+            return
+        end
     end
     
     result = nan;
@@ -239,13 +254,27 @@ function result = isNanForKey(obj,key)
     end
     
     index = obj.keyArray.indexOfObject(key);
-    if isempty(index)
-        return;
-    end
-    
-    object = obj.objectForKey(key);
-    if length(object) ~= 1 || ~isnan(object)
-        result = false;
+    if ~isempty(index)
+        object = obj.objectForKey(key);
+        if length(object) ~= 1 || ~isnan(object)
+            result = false;
+        end
+    elseif ischar(key)
+        index = obj.keyArray.indexOfObject(convertCharsToStrings(key));
+        if ~isempty(index)
+            object = obj.objectForKey(key);
+            if length(object) ~= 1 || ~isnan(object)
+                result = false;
+            end
+        end
+    elseif isstring(key)
+        index = obj.keyArray.indexOfObject(convertStringsToChars(key));
+        if ~isempty(index)
+            object = obj.objectForKey(key);
+            if length(object) ~= 1 || ~isnan(object)
+                result = false;
+            end
+        end
     end
 end
 
